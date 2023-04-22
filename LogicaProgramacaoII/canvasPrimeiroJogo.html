@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>
+        Canvas Primeiro Jogo
+    </title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Tilt+Neon&display=swap');
+
+        body > div {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            font-family: 'Tilt Neon', cursive;
+        }
+
+        canvas{
+            border: 2px dashed;
+        }
+
+        div span{
+            font-weight: normal;
+        }
+
+        #areaTempo{
+            text-align: right;
+        }
+
+        #mensagem span{
+            background-color: yellow;
+            border: 1px solid grey;
+            padding: 1rem;
+            border-radius: 10px;
+            font-size: large;
+            text-align: center;
+            display: block;
+        }
+
+        div p{
+            width: 400px;
+        }
+
+        #dificuldade{
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+        }
+
+        #dificuldade span{
+            margin: auto 1rem;
+        }
+
+        #dificuldade button{
+            background-color: lightcyan;
+            border: 1px solid;
+            border-radius: 10px;
+            width: 50px;
+            height: 30px;
+            font-size: large;
+        }
+
+        #dificuldade button:hover{
+            background-color: aqua;
+        }
+
+        #dificuldade button:disabled:hover{
+            background-color: lightcyan;
+        }
+
+        #dificuldade #iniciar{
+            width: 100px;
+            background-color: greenyellow;
+        }
+
+        #dificuldade #iniciar:hover{
+            background-color: green;
+        }
+    </style>
+</head>
+
+<body>
+    <div>
+        <div>
+            <canvas width="600" height="400"></canvas>
+            <div id="dificuldade">
+                <h2>
+                    Dificuldade:
+                </h2>
+                <div>
+                    <button onclick="diminuirDificuldade()" id="menosDificuldade">
+                        -
+                    </button>
+                    <span id="nivel">
+                        Nível 1
+                    </span>
+                    <button onclick="aumentarDificuldade()" id="maisDificuldade">
+                        +
+                    </button>
+                </div>
+                <button onclick="iniciarJogo()" id="iniciar">
+                    iniciar
+                </button>
+            </div>
+        </div>
+        <div>
+            <h1>
+                Acerte o Alvo!
+            </h1>
+            <h3 id="areaTempo">
+                Tempo:
+                <span id="tempo">
+                    0
+                </span>
+            </h3>
+            <h3>
+                Tentativas:
+                <span id="tentativas">
+                    0
+                </span>
+            </h3>
+            <h3>
+                Acertos:
+                <span id="acertos">
+                    0
+                </span>
+            </h3>
+            <h2>
+                Seus Pontos:
+                <span id="pontos">
+                    0
+                </span>
+            </h2>
+            <div id="mensagem">
+                <span>
+                    Clique em <strong>Iniciar</strong> para começar
+                </span>
+            </div>
+            <div>
+                <h3>
+                    Como jogar
+                </h3>
+                <p>
+                    Bem-vindo(a) ao jogo de alvo! Sua missão é acertar o centro do alvo dentro de 1 minuto para ganhar pontos e mostrar suas habilidades de pontaria. Concentre-se, mire com precisão e clique no centro do alvo para marcar pontos. Mas cuidado! Se você clicar fora do centro, perderá pontos. Desafie-se a acertar o alvo com o máximo de precisão possível e alcance a maior pontuação para se tornar o campeão deste jogo emocionante! Divirta-se e mostre suas habilidades de tiro!
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+
+        var tela = document.querySelector('canvas');
+        var pincel = tela.getContext('2d');
+
+        var tentativas = document.getElementById('tentativas');
+        var acertos = document.getElementById('acertos');
+        var pontos = document.getElementById('pontos');
+        var tempoJogo = document.getElementById('tempo');
+
+        var nivel = document.getElementById('nivel');
+        var menosDificuldade = document.getElementById('menosDificuldade');
+        var maisDificuldade = document.getElementById('maisDificuldade');
+
+        var mensagem = document.querySelector('#mensagem span');
+
+        pincel.fillStyle = 'lightgray';
+        pincel.fillRect(0, 0, 600, 400);
+
+        var raio = 10;
+
+        var xAleatorio;
+        var yAleatorio;
+
+        var numTentativas = 0;
+        var numAcertos = 0;
+        var numPontos = 0;
+        var numTempoJogo = 0;
+
+        var numNivel = 1;
+        var velocidade = 1000;
+        var iniciar = setInterval(atualizaTela, velocidade);
+        clearInterval(iniciar);
+        var tempo = setTimeout(placar, 60000);
+        clearTimeout(tempo);
+
+        var timeGame = setInterval(tempoAtual, 1000);
+        clearInterval(timeGame);
+
+        function tempoAtual() {
+            numTempoJogo++;
+            tempoJogo.innerHTML = numTempoJogo + "s";
+        }
+
+        function desenhaCirculo(x, y, raio, cor) {
+            pincel.fillStyle = cor;
+            pincel.beginPath();
+            pincel.arc(x, y, raio, 0, 2 * Math.PI);
+            pincel.fill();
+        }
+
+        function limpaTela() {
+            pincel.clearRect(0, 0, 600, 400);
+        }
+
+        function desenhaAlvo(x, y) {
+            desenhaCirculo(x, y, raio + 20, 'red');
+            desenhaCirculo(x, y, raio + 10, 'white');
+            desenhaCirculo(x, y, raio, 'red');
+        }
+
+        function sorteiaPosicao(maximo) {
+            return Math.floor(Math.random() * maximo);
+        }
+
+        function atualizaTela() {
+            limpaTela();
+            xAleatorio = sorteiaPosicao(600);
+            yAleatorio = sorteiaPosicao(400);
+            desenhaAlvo(xAleatorio, yAleatorio);
+        }
+
+        function dispara(evento) {
+            var x = evento.pageX - tela.offsetLeft;
+            var y = evento.pageY - tela.offsetTop;
+
+            numTentativas++;
+            tentativas.innerHTML = numTentativas;
+
+            if ((x > xAleatorio - raio) && (x < xAleatorio + raio) && (y > yAleatorio - raio) && (y < yAleatorio + raio)) {
+                numAcertos++;
+                acertos.innerHTML = numAcertos;
+                numPontos += 10;
+                pontos.innerHTML = numPontos;
+
+                mensagem.innerHTML = "VOCÊ ACERTOU";
+                mensagem.style.backgroundColor = "greenyellow";
+            }
+            else{
+                numPontos -= 10;
+                pontos.innerHTML = numPontos;
+
+                mensagem.innerHTML = "VOCÊ ERROU";
+                mensagem.style.backgroundColor = "lightcoral";
+            }
+        }
+
+        tela.onclick = dispara;
+
+        function disabilitadoMenos(){
+            if(numNivel <= 1){
+                menosDificuldade.disabled = true;
+            }
+            else{
+                menosDificuldade.disabled = false;
+            }
+        }
+
+        function disabilitadoMais(){
+            if(numNivel >= 5){
+                maisDificuldade.disabled = true;
+            }
+            else{
+                maisDificuldade.disabled = false;
+            }
+        }
+            
+        disabilitadoMenos();
+
+        function diminuirDificuldade(){
+            numNivel--;
+            nivel.innerHTML = "Nível " + numNivel;
+            velocidade += 200;
+            disabilitadoMenos();
+            disabilitadoMais();
+        }
+
+        function aumentarDificuldade(){
+            numNivel++;
+            nivel.innerHTML = "Nível " + numNivel;
+            velocidade -= 200;
+            disabilitadoMenos();
+            disabilitadoMais();
+        }
+
+        function iniciarJogo(){
+            numTentativas = 0;
+            numAcertos = 0;
+            numPontos = 0;
+            numTempoJogo = 0;
+
+            acertos.innerHTML = numAcertos;
+            tentativas.innerHTML = numTentativas;
+            pontos.innerHTML = numPontos;
+            tempoJogo.innerHTML = numTempoJogo + "s";
+
+            mensagem.innerHTML = "<br>";
+            mensagem.style.backgroundColor = "yellow";
+
+            limpaTela();
+            clearInterval(iniciar);
+            iniciar = setInterval(atualizaTela, velocidade);
+            clearInterval(timeGame);
+            timeGame = setInterval(tempoAtual, 1000);
+
+            clearTimeout(tempo);
+            
+            gameOver();
+        }
+
+        function placar(){
+            limpaTela();
+            console.log("ACABOU");
+            clearInterval(timeGame);
+            clearInterval(iniciar);
+
+            pincel.fillStyle = 'lightgray';
+            pincel.fillRect(0, 0, 600, 400);
+
+            mensagem.innerHTML = "GAME OVER";
+            mensagem.style.backgroundColor = "orange";
+        }
+
+        function gameOver(){
+            tempo = setTimeout(placar, 60000);
+        }
+
+    </script>
+</body>
+
+</html>
